@@ -5,7 +5,7 @@ output: html_document
 ---
 
 #0. Read in the Data
-You may just need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
+You may need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
 
 ```{r}
 load("~/Dropbox/STAT992/DataSource/Dat.RData")
@@ -42,7 +42,7 @@ referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(ref
 #clust.eigen.referral.all$membership
 ```
 
-New we try the same thing on Madison, so at least we have a graph on the network.
+Now we try the same thing on Madison, so at least we have a graph on the network.
 ```{r}
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
