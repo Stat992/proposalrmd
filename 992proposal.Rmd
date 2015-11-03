@@ -1,33 +1,19 @@
 ---
-title: "992 proposal"
-author: "Rong Ma"
-date: "Sep 2, 2015"
+title: "992 Proposal"
+author: "Group 2"
 output: html_document
 ---
 
-```{r}
-x <- rnorm(100)
-plot(1:100, x)
-```
-
-
-gyuhlhjkjjjjjjj
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-###rokalsdkfla
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-gift cards
+#0. Read in the Data
+You may just need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
 
 ```{r}
-summary(cars)  ### good
+# load("~/Dropbox/STAT992/DataSource/Dat.RData")
+# load("~/Dropbox/STAT992/DataSource/Et.RData")
 ```
 
-You can also embed plots, for example:
+#1. 
 
-```{r, echo=FALSE}
-plot(cars)
-#haha
+```{r}
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
