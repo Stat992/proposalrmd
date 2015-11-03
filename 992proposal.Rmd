@@ -8,12 +8,57 @@ output: html_document
 You may just need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
 
 ```{r}
-# load("~/Dropbox/STAT992/DataSource/Dat.RData")
-# load("~/Dropbox/STAT992/DataSource/Et.RData")
+load("~/Dropbox/STAT992/DataSource/Dat.RData")
+load("~/Dropbox/STAT992/DataSource/Et.RData")
 ```
 
-#1. 
+#1. Referral Network Clustering
 
 ```{r}
+library(data.table)
+library(igraph)
+setkey(Et, V1) #setkey for Et
+head(Et)
+setkey(Dat, NPI) #setkey for Dat
+head(Dat)
+tmp.link = Et[unique(Dat$NPI)] #link two data sets
+tmp.link = tmp.link[complete.cases(tmp.link)] #only keep the complete cases
+referral.matrix = as.matrix(tmp.link)[,1:2]
+referral.undirected.graph = graph.edgelist(referral.matrix,directed=F)
+referral.undirected.graph = simplify(referral.undirected.graph) #simplify the graph
+core.referral.graph = graph.coreness(referral.undirected.graph) #get core
+hist(core.referral.graph)
+sum(core.referral.graph > 20)
+referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(referral.undirected.graph)[core.referral.graph>20])
+#plot(referral.graph.all, vertex.label=NA, main = "Overall Network Graph") #Loooooong time to draw. Maybe we only focus on Wisconsin. In the following, to save your time, I "#" all the command lines and add the output.
+#clust.referral.all = clusters(referral.graph.all) #clustering
+#clust.referral.all$csize  #seems all connected
+#[1] 140366
+#clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
+#table(clust.eigen.referral.all$membership)
+#    1     2     3     4     5     6     7     8     9    10 
+#91579 16945  9327  3249   488 16503   704  1321    50   200 
+#This seems a good clustering. To call the membership index you need to use the following command
+#clust.eigen.referral.all$membership
+```
 
+New we try the same thing on Madison, so at least we have a graph on the network.
+```{r}
+wisc.referral = Dat[`NPPES Provider State`== "WI"]
+tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
+tmp.link.wisc = tmp.link.wisc[complete.cases(tmp.link.wisc)] #only keep the complete cases
+referral.matrix.wisc = as.matrix(tmp.link.wisc)[,1:2]
+referral.undirected.graph.wisc = graph.edgelist(referral.matrix.wisc,directed=F)
+referral.undirected.graph.wisc = simplify(referral.undirected.graph.wisc) #simplify the graph
+core.referral.graph.wisc = graph.coreness(referral.undirected.graph.wisc) #get core
+hist(core.referral.graph.wisc)
+sum(core.referral.graph.wisc > 20)
+referral.graph.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=V(referral.undirected.graph.wisc)[core.referral.graph.wisc>20])
+plot(referral.graph.wisc, vertex.label=NA, main = "Wisconsin Network Graph")
+clust.referral.wisc = clusters(referral.graph.wisc) 
+clust.referral.wisc$csize
+clust.eigen.referral.wisc = cluster_leading_eigen(referral.graph.wisc)
+table(clust.eigen.referral.wisc$membership)
+third.cluster.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=(clust.eigen.referral.wisc$membership==3))
+plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
 ```
