@@ -43,6 +43,7 @@ referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(ref
 ```
 
 Now we try the same thing on Wisconsin, so at least we have a graph on the network.
+
 ```{r}
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
