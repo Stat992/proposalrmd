@@ -1,14 +1,18 @@
-@@ -8,12 +8,57 @@ output: html_document
+---
+title: "992 Proposal"
+author: "Group 2"
+output: html_document
+---
+
+#0. Read in the Data
 You may just need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
 
 ```{r}
-# load("~/Dropbox/STAT992/DataSource/Dat.RData")
-# load("~/Dropbox/STAT992/DataSource/Et.RData")
 load("~/Dropbox/STAT992/DataSource/Dat.RData")
 load("~/Dropbox/STAT992/DataSource/Et.RData")
 ```
 
-#1. 
+ 
 #1. Referral Network Clustering
 
 ```{r}
@@ -46,12 +50,8 @@ referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(ref
 #clust.eigen.referral.all$membership
 ```
 
-<<<<<<< Updated upstream
 Now we try the same thing on Wisconsin, so at least we have a graph on the network.
 
-=======
-New we try the same thing on Madison, so at least we have a graph on the network.
->>>>>>> Stashed changes
 ```{r}
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
@@ -70,11 +70,10 @@ clust.eigen.referral.wisc = cluster_leading_eigen(referral.graph.wisc)
 table(clust.eigen.referral.wisc$membership)
 third.cluster.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=(clust.eigen.referral.wisc$membership==3))
 plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
-<<<<<<< Updated upstream
 ```
 
 
-##2 plot with money and provider type,reason
+#2. plot with money and provider type,reason
 ```{r}
 features = colnames(Dat)[c(3,7,12:14)]
 print(features)
@@ -145,14 +144,3 @@ plot(wigraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(wigraph.c
 legend('bottomleft',legend = unique(as.factor(V(wigraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
 ```
 
-
-
-
-
-
-
-```
-=======
-
-``` 
->>>>>>> Stashed changes
