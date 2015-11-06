@@ -63,3 +63,10 @@ table(clust.eigen.referral.wisc$membership)
 third.cluster.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=(clust.eigen.referral.wisc$membership==3))
 plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
 ```
+
+```{r}
+
+
+
+
+```
