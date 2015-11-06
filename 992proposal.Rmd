@@ -1,17 +1,14 @@
----
-title: "992 Proposal"
-author: "Group 2"
-output: html_document
----
-
-#0. Read in the Data
-You may need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
+@@ -8,12 +8,57 @@ output: html_document
+You may just need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
 
 ```{r}
+# load("~/Dropbox/STAT992/DataSource/Dat.RData")
+# load("~/Dropbox/STAT992/DataSource/Et.RData")
 load("~/Dropbox/STAT992/DataSource/Dat.RData")
 load("~/Dropbox/STAT992/DataSource/Et.RData")
 ```
 
+#1. 
 #1. Referral Network Clustering
 
 ```{r}
@@ -21,6 +18,13 @@ setkey(Et, V1) #setkey for Et
 head(Et)
 setkey(Dat, NPI) #setkey for Dat
 head(Dat)
+
+pie(-sort(-(table(Dat$"Provider Type"))))
+providertype.top15=names(-sort(-table(Dat$`Provider Type`))[1:15])## almost 75% of Dat, the rest 25% is defined as others
+Dat$`Provider Type`[which(!(Dat$`Provider Type` %in% providertype.top15))]="Others"
+pie(-sort(-(table(Dat$"Provider Type"))))
+
+
 tmp.link = Et[unique(Dat$NPI)] #link two data sets
 tmp.link = tmp.link[complete.cases(tmp.link)] #only keep the complete cases
 referral.matrix = as.matrix(tmp.link)[,1:2]
@@ -42,8 +46,12 @@ referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(ref
 #clust.eigen.referral.all$membership
 ```
 
+<<<<<<< Updated upstream
 Now we try the same thing on Wisconsin, so at least we have a graph on the network.
 
+=======
+New we try the same thing on Madison, so at least we have a graph on the network.
+>>>>>>> Stashed changes
 ```{r}
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
@@ -62,11 +70,89 @@ clust.eigen.referral.wisc = cluster_leading_eigen(referral.graph.wisc)
 table(clust.eigen.referral.wisc$membership)
 third.cluster.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=(clust.eigen.referral.wisc$membership==3))
 plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
+<<<<<<< Updated upstream
 ```
+
+
+##2 plot with money and provider type,reason
+```{r}
+features = colnames(Dat)[c(3,7,12:14)]
+print(features)
+
+wisc.ids=V(referral.undirected.graph.wisc)$name
+wisc.cities = wisc.referral[wisc.ids, mult = "first"]$`NPPES Provider City`
+-sort(-table(wisc.cities))[1:10] #top 10 cities
+mean(is.na(wisc.cities))
+g=referral.undirected.graph.wisc
+g = set.vertex.attribute(g, name = "city", index=V(g),value = wisc.cities)
+madgraph = induced.subgraph(graph = g,vids = which(V(g)$city == "MADISON")) #subgraph for Madison
+summary(madgraph)
+
+madgraph.core = graph.coreness(madgraph) #get core
+sum(madgraph.core)
+madgraph.corereduce = induced.subgraph(graph=madgraph,vids=V(madgraph)[madgraph.core>10])#select core>10
+sum(graph.coreness(madgraph.corereduce))
+
+ids = V(madgraph.corereduce)$name
+tmp =wisc.referral[ids, mult = "last"]
+atbs = tmp[,features, with = F]  # Thank you google for helping to find "with"
+mean(complete.cases(atbs))
+atbs = as.matrix(atbs)
+for(i in 1:ncol(atbs)){
+madgraph.corereduce = set.vertex.attribute(madgraph.corereduce, name = colnames(atbs)[i], index=V(madgraph.corereduce),value =  atbs[,i])
+}#add features to madgraph
+
+locs = layout.auto(madgraph.corereduce)
+summary(madgraph.corereduce)
+V(madgraph.corereduce)$size <- (as.numeric(V(madgraph.corereduce)$`Total Medicare Payment Amount`))^(1/6)#set vertex size proportional to Total Medicare Payment Amount
+plot(madgraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(madgraph.corereduce)$"Provider Type"), layout = locs,main="Madison(Core>10)")#color the vertex according to Provider Type
+legend('bottomleft',legend = unique(as.factor(V(madgraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
+```
+
 
 ```{r}
+str(Et$V2)
+
+wisc.referral = Dat[`NPPES Provider State`== "WI"]
+tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
+tmp.link.wisc.forplot=tmp.link.wisc[which(tmp.link.wisc$V2 %in% wisc.referral$NPI)]
+tmp.link.wisc.forplot = tmp.link.wisc.forplot[complete.cases(tmp.link.wisc.forplot)] #only keep the complete cases
+referral.matrix.wisc.forplot = as.matrix(tmp.link.wisc.forplot)[,1:2]
+referral.undirected.graph.wisc.forplot = graph.edgelist(referral.matrix.wisc.forplot,directed=F)
+referral.undirected.graph.wisc.forplot = simplify(referral.undirected.graph.wisc.forplot) 
+features = colnames(Dat)[c(3,7,12:14)]
+wigraph=referral.undirected.graph.wisc.forplot
+
+
+wigraph.core = graph.coreness(wigraph) #get core
+sum(wigraph.core)
+wigraph.corereduce = induced.subgraph(graph=wigraph,vids=V(wigraph)[wigraph.core>15])
+sum(graph.coreness(wigraph.corereduce))
+
+
+ids = V(wigraph.corereduce)$name
+tmp =wisc.referral[ids, mult = "last"]
+atbs = tmp[,features, with = F]  # Thank you google for helping to find "with" 1043240922
+mean(complete.cases(atbs))
+atbs = as.matrix(atbs)
+for(i in 1:ncol(atbs)){
+wigraph.corereduce = set.vertex.attribute(wigraph.corereduce, name = colnames(atbs)[i], index=V(wigraph.corereduce),value =  atbs[,i])
+}
+locs = layout.lgl(wigraph.corereduce)
+
+V(wigraph.corereduce)$size <- (as.numeric(V(wigraph.corereduce)$`Total Medicare Payment Amount`))^(1/6)
+plot(wigraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(wigraph.corereduce)$"Provider Type"), layout = locs,main="Wisconsin(Core>15)")
+legend('bottomleft',legend = unique(as.factor(V(wigraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
+```
+
+
+
 
 
 
 
 ```
+=======
+
+``` 
+>>>>>>> Stashed changes
