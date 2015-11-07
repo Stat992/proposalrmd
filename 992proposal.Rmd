@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 ---
 title: "992 Proposal"
 author: "Group 2"
@@ -7,6 +8,18 @@ output: html_document
 
 #0. Read in the Data
 You may need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
+=======
+
+---
+title: "992 Proposal"
+author: "Group 2"
+output: html_document
+---
+
+#0. Read in the Data
+You may need to run it once at the beginning of your work; after that, you'd better keep them as comments to save running time for `knitr`.
+
+>>>>>>> Stashed changes
 
 ```{r}
 load("~/Dropbox/STAT992/DataSource/Dat.RData")
@@ -39,19 +52,26 @@ hist(core.referral.graph)
 sum(core.referral.graph > 20)
 referral.graph.all = induced.subgraph(graph=referral.undirected.graph,vids=V(referral.undirected.graph)[core.referral.graph>20])
 
+
 #plot(referral.graph.all, vertex.label=NA, main = "Overall Network Graph") #Loooooong time to draw. Maybe we only focus on Wisconsin. In the following, to save your time, I "#" all the command lines and add the output.
-#clust.referral.all = clusters(referral.graph.all) #clustering
-#clust.referral.all$csize  #seems all connected
+clust.referral.all = clusters(referral.graph.all) #clustering
+clust.referral.all$csize  #seems all connected
 #[1] 140366
-#clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
-#table(clust.eigen.referral.all$membership)
+clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
+table(clust.eigen.referral.all$membership)
 #    1     2     3     4     5     6     7     8     9    10 
 #91579 16945  9327  3249   488 16503   704  1321    50   200 
 #This seems a good clustering. To call the membership index you need to use the following command
-#clust.eigen.referral.all$membership
+clust.eigen.referral.all$membership
+V(referral.graph.all)
 ```
 
+<<<<<<< Updated upstream
 Now we try the same thing on Madison, so at least we have a graph on the network.
+=======
+Now we try the same thing on Wisconsin, so at least we have a graph on the network.
+
+>>>>>>> Stashed changes
 ```{r}
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
@@ -71,8 +91,15 @@ table(clust.eigen.referral.wisc$membership)
 third.cluster.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=(clust.eigen.referral.wisc$membership==3))
 plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
 ```
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 
 #2. plot with money and provider type,reason
+
+
 ```{r}
 features = colnames(Dat)[c(3,7,12:14)]
 print(features)
@@ -143,17 +170,48 @@ plot(wigraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(wigraph.c
 legend('bottomleft',legend = unique(as.factor(V(wigraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
 ```
 
+<<<<<<< Updated upstream
 #3. Zipcode clusters
+=======
+
+
+Zipcode clusters
+>>>>>>> Stashed changes
 ```{r}
 library(zipcode)
-data(zipcode);
-zipcode = as.data.table(zipcode); 
+library(dplyr)
+library(ggplot2)
+data(zipcode)
+zipcode = as.data.table(zipcode) 
 setkey(zipcode, zip)
+
+
+clust.referral.all = clusters(referral.graph.all) #clustering
+clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
+table(clust.eigen.referral.all$membership)
+clust.eigen.referral.all$membership
+which(as.numeric(names(V(referral.graph.all))) %in% zipToNPI$NPI)
+clusterIndex = data.frame(NPI = names(V(referral.graph.all)), index = clust.eigen.referral.all$membership)
+
+# The following code repeat the cluster using Zipcode instead of NPI:
+zipToNPI = data.frame(zipcode = Dat$`NPPES Provider Zip Code`, NPI = Dat$NPI)
+clusterIndex = merge(zipToNPI, clusterIndex, by = "NPI")
+
+head(clusterIndex)
+
+
+colnames(clusterIndex)[2] = "zip"
+zipdata = na.omit(merge(clusterIndex, zipcode, by = "zip"))
+head(zipdata)
+zipdata$index = as.factor(zipdata$index)
+p = ggplot(data = zipdata, aes(x = longitude, y = latitude))
+p + geom_point(aes(colour = index)) + xlim(-175, -50)
 
 locs = zipcode[, c("longitude", "latitude"), with = F]
 locs = locs[complete.cases(locs)]
 sum(is.na(locs))
 rownames(locs) = zips
+
 
 library(deldir)
 library(datautils) # this helps to fill in colors
@@ -161,7 +219,7 @@ library(maps)
 library(grid)
 
 dl = deldir(locs$long, locs$lat)  # find the tesselation
-colss  = as.factor(sample(10,1:nrow(locs)))  # these are the colors of the zip codes.  ensure the elements line up with locs.
+colss  = as.factor(sample(10,nrow(locs)))  # these are the colors of the zip codes.  ensure the elements line up with locs.
 
 jpeg(filename = "tmp.jpeg",width = 230,height = 100, units = "in", res = 72)  # make it big so that the boarders are thin.  this is a hack!
 
@@ -179,3 +237,7 @@ dev.off()
 
 getwd()
 ```
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
