@@ -1,0 +1,114 @@
+---
+title: "992 pro1"
+output: html_document
+---
+
+
+
+```{r,echo=FALSE}
+library(data.table)
+library(igraph)
+library(maps)
+library(zipcode)
+```
+
+
+
+```{r,echo=FALSE}
+Et = fread("/Users/huxiao/Desktop/USA/course/992/data/import/physician-referrals-2015-days365.txt",sep = ",",colClasses = c("character", "character","numeric", "numeric", "numeric"))
+setkey(Et, V1)      
+
+```
+
+
+```{r,echo=FALSE}
+bb= c("character",rep("factor",2),rep("numeric",6))
+dt = fread("/Users/huxiao/Desktop/USA/course/992/project/data/Medicare simple charge.csv",colClasses =bb)
+dt$npi<-gsub(" ","",dt$npi)
+setkey(dt, npi)  
+
+
+```
+
+
+```{r,echo=FALSE}
+tmp = Et[unique(dt$npi)]  
+Edt = tmp[complete.cases(tmp)]      
+el=as.matrix(Edt)[,1:2] 
+g=graph.edgelist(el,directed = F) 
+ids = V(g)$name
+states = dt[ids,mult = "first"]$NPPES_Provider_State
+-sort(-table(states))[1:20]
+g= set.vertex.attribute(g, name = "state", index=V(g),value =  states)
+sgraph = induced.subgraph(g ,vids = which(V(g)$state == "CA"))
+summary(sgraph)
+
+```
+
+```{r}
+core = graph.coreness(sgraph)
+sum(core>65)
+sgraph = induced.subgraph(graph = sgraph,vids = core>65)
+plot(sgraph,vertex.size=4,layout=layout.fruchterman.reingold,edge.arrow.size=0.05,vertex.label=NA,main="The referral network of NPI in California")
+```
+
+
+#####
+
+```{r,echo=FALSE}
+features = colnames(dt)[c(5,6,10,14,16)]
+features
+ids = V(sgraph)$name
+tmp = dt[ids, mult = "last"]
+atbs = tmp[,features, with = F]  
+mean(complete.cases(atbs))
+
+atbs = as.matrix(atbs)
+for(i in 1:ncol(atbs)){
+sgraph = set.vertex.attribute(sgraph, name = colnames(atbs)[i], index=V(sgraph),value =  atbs[,i])
+}
+summary(sgraph)
+
+locs = layout.fruchterman.reingold(sgraph)
+summary(sgraph)
+
+```
+
+```{r}
+plot(sgraph, vertex.label = NA,vertex.size=8, vertex.color = as.factor(V(sgraph)$"nppes_credentials"), layout = locs,main="different colors for nppes_credentials")
+
+
+plot(sgraph, vertex.label = NA,vertex.size=8, vertex.color = as.factor(V(sgraph)$"nppes_provider_city"), layout = locs,main="different colors for nppes_provider_city")
+
+plot(sgraph, vertex.label = NA,vertex.size=8, vertex.color = as.factor(V(sgraph)$"provider_type"), layout = locs,main="different colors for provider_type")
+
+
+plot(sgraph, vertex.label = NA,vertex.size=8, vertex.color = as.factor(V(sgraph)$"place_of_service"), layout = locs,main="different colors for place_of_service")
+
+```
+
+```{r}
+
+data(zipcode)
+zipcode = as.data.table(zipcode); setkey(zipcode, zip) 
+ca = dt[nppes_provider_state == "CA"]
+zip = ca$"nppes_provider_zip"
+zip = substr(zip, start = 1, stop = 5)
+```
+
+```{r,echo=FALSE}
+loc =  zipcode[zip, c("latitude", "longitude"), with = F]
+loc = loc[complete.cases(loc)]
+loc = as.matrix(loc)
+plot(loc[,2], loc[,1],xlim=c(-125,-113),ylim=c(32,43),main="locations of zip codes in CA")
+map('state', region = c('california'), add = T) 
+```
+
+### Summary
+
+> *The dataset I choose is Physician and Other Supplier Data CY 2013. It contains information on utilization, payment (allowed amount and Medicare payment), and submitted charges organized by NPI.I plot the referral network of NPI in this dataset for California. I choose the coreness more than two, and there are 334 vertices.*
+
+> *For the following figures, I link the NPI in CA to the referral network with the features, which I choose are nppes_credentials,nppes_provider_city,provider_type,place_of_service. Then I colored them by different factors. There are more or less clustering phenomena for different features.*
+
+> *The last figure represents for the zip code data of CA in this dataset, and I plot a map of the zip code. The density of the zip code can be seen in the map.*
+
