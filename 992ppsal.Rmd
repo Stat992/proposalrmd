@@ -217,6 +217,8 @@ getwd()
 
 
 
+#3. Provider Type
+
 ```{r Zaiwei}
 tmp.link = Et[unique(Dat$NPI)] #link two data sets
 tmp.link = tmp.link[complete.cases(tmp.link)] #only keep the complete cases
