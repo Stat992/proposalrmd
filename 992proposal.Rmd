@@ -26,6 +26,19 @@ load("~/Dropbox/STAT992/DataSource/Dat.RData")
 load("~/Dropbox/STAT992/DataSource/Et.RData")
 ```
  
+```{r}
+library(grDevices)
+library(Matrix)
+library(rARPACK)
+library(plyr)
+suppressPackageStartupMessages(library(dplyr))
+library(ggplot2)
+library(grid)
+library(data.table)
+
+```
+ 
+ 
 #1. Referral Network Clustering
 
 ```{r}

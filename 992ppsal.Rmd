@@ -80,59 +80,28 @@ plot(third.cluster.wisc,vertex.label=NA,main = "Graph of 3rd cluster within WI")
 
 #2. plot with money and provider type,reason
 
-
 ```{r}
-features = colnames(Dat)[c(3,7,12:14)]
-print(features)
+library(colorspace)
+Dat.type=Dat
+pie(-sort(-(table(Dat$"Provider Type"))))
+providertype.top15=names(-sort(-table(Dat$`Provider Type`))[1:15])## almost 75% of Dat, the rest 25% is defined as others
+Dat.type$`Provider Type`[which(!(Dat$`Provider Type` %in% providertype.top15))]="Others"
+pie(-sort(-(table(Dat.type$"Provider Type"))))
 
-wisc.ids=V(referral.undirected.graph.wisc)$name
-wisc.cities = wisc.referral[wisc.ids, mult = "first"]$`NPPES Provider City`
--sort(-table(wisc.cities))[1:10] #top 10 cities
-mean(is.na(wisc.cities))
-g=referral.undirected.graph.wisc
-g = set.vertex.attribute(g, name = "city", index=V(g),value = wisc.cities)
-madgraph = induced.subgraph(graph = g,vids = which(V(g)$city == "MADISON")) #subgraph for Madison
-summary(madgraph)
-
-madgraph.core = graph.coreness(madgraph) #get core
-sum(madgraph.core)
-madgraph.corereduce = induced.subgraph(graph=madgraph,vids=V(madgraph)[madgraph.core>10])#select core>10
-sum(graph.coreness(madgraph.corereduce))
-
-ids = V(madgraph.corereduce)$name
-tmp =wisc.referral[ids, mult = "last"]
-atbs = tmp[,features, with = F]  # Thank you google for helping to find "with"
-mean(complete.cases(atbs))
-atbs = as.matrix(atbs)
-for(i in 1:ncol(atbs)){
-madgraph.corereduce = set.vertex.attribute(madgraph.corereduce, name = colnames(atbs)[i], index=V(madgraph.corereduce),value =  atbs[,i])
-}#add features to madgraph
-
-locs = layout.auto(madgraph.corereduce)
-summary(madgraph.corereduce)
-V(madgraph.corereduce)$size <- (as.numeric(V(madgraph.corereduce)$`Total Medicare Payment Amount`))^(1/6)#set vertex size proportional to Total Medicare Payment Amount
-plot(madgraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(madgraph.corereduce)$"Provider Type"), layout = locs,main="Madison(Core>10)")#color the vertex according to Provider Type
-legend('bottomleft',legend = unique(as.factor(V(madgraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
-```
-
-
-```{r}
-str(Et$V2)
-
-wisc.referral = Dat[`NPPES Provider State`== "WI"]
+wisc.referral = Dat.type[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
 tmp.link.wisc.forplot=tmp.link.wisc[which(tmp.link.wisc$V2 %in% wisc.referral$NPI)]
 tmp.link.wisc.forplot = tmp.link.wisc.forplot[complete.cases(tmp.link.wisc.forplot)] #only keep the complete cases
 referral.matrix.wisc.forplot = as.matrix(tmp.link.wisc.forplot)[,1:2]
 referral.undirected.graph.wisc.forplot = graph.edgelist(referral.matrix.wisc.forplot,directed=F)
 referral.undirected.graph.wisc.forplot = simplify(referral.undirected.graph.wisc.forplot) 
-features = colnames(Dat)[c(3,7,12:14)]
+features = colnames(Dat.type)[c(3,7,12:14)]
 wigraph=referral.undirected.graph.wisc.forplot
 
 
 wigraph.core = graph.coreness(wigraph) #get core
 sum(wigraph.core)
-wigraph.corereduce = induced.subgraph(graph=wigraph,vids=V(wigraph)[wigraph.core>15])
+wigraph.corereduce = induced.subgraph(graph=wigraph,vids=V(wigraph)[wigraph.core>10])
 sum(graph.coreness(wigraph.corereduce))
 
 
@@ -144,15 +113,190 @@ atbs = as.matrix(atbs)
 for(i in 1:ncol(atbs)){
 wigraph.corereduce = set.vertex.attribute(wigraph.corereduce, name = colnames(atbs)[i], index=V(wigraph.corereduce),value =  atbs[,i])
 }
+
+set.seed(1)
 locs = layout.lgl(wigraph.corereduce)
 
 V(wigraph.corereduce)$size <- (as.numeric(V(wigraph.corereduce)$`Total Medicare Payment Amount`))^(1/6)
-plot(wigraph.corereduce, vertex.label = NA, vertex.color = as.factor(V(wigraph.corereduce)$"Provider Type"), layout = locs,main="Wisconsin(Core>15)")
-legend('bottomleft',legend = unique(as.factor(V(wigraph.corereduce)$"Provider Type")),col=1:16,pch=16,cex = 0.4)
+
+#color
+
+plot(wigraph.corereduce, vertex.label = NA,vertex.color = rainbow_hcl(10)[(as.factor(V(wigraph.corereduce)$"Provider Type"))], layout = locs,main="Wisconsin(Core>10)")
+
+legend('topleft',legend = levels(as.factor(V(wigraph.corereduce)$'Provider Type')), col=rainbow_hcl(10), pch=16,cex = 0.5)
+```
+
+#3.
+
+```{r}
+library(grDevices)
+library(Matrix)
+library(rARPACK)
+library(plyr)
+suppressPackageStartupMessages(library(dplyr))
+library(ggplot2)
+library(grid)
+library(data.table)
+library(igraph)
+
 ```
 
 
-#3. Zipcode clusters
+### Now we foucs on Wisconsin
+
+```{r}
+wisc.referral = Dat[`NPPES Provider State`== "WI"]
+tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
+tmp.link.wisc = tmp.link.wisc[complete.cases(tmp.link.wisc)] 
+tmp.link.wisc<-tmp.link.wisc[which(tmp.link.wisc$V2 %in% wisc.referral$NPI)]  
+# only keep the vertice in Wisconsin and individual
+referral.matrix.wisc= as.matrix(tmp.link.wisc)[,1:2]
+referral.undirected.graph.wisc= graph.edgelist(referral.matrix.wisc,directed=F)
+referral.undirected.graph.wisc= simplify(referral.undirected.graph.wisc) #simplify the graph
+```
+
+###  Try some regression for WI
+
+```{r}
+deg.graph.wisc<-degree(referral.undirected.graph.wisc)
+hist(deg.graph.wisc,col="lightblue",xlim=c(0, 200), xlab="Vertex Degree", ylab="Frequency", main="",breaks=150)   #  The degree distribution for the network,long tail
+dis.graph.wisc<-degree.distribution(referral.undirected.graph.wisc)
+dd<- 1:max(deg.graph.wisc)-1
+ind <- (dis.graph.wisc!= 0)
+plot(dd[ind], dis.graph.wisc[ind],log="xy",col="blue",xlab=c("Log-Degree"),ylab=c("Log-Intensity"), main="Log-Log Degree Distribution")      #   log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree
+
+knn.deg.graph.wisc<- graph.knn(referral.undirected.graph.wisc,V(referral.undirected.graph.wisc))$knn     # Calculate the average nearest neighbor degree of the given vertices 
+plot(deg.graph.wisc,knn.deg.graph.wisc, log="xy",col="goldenrod", xlab=c("Log Vertex Degree"), ylab=c("Log Average Neighbor Degree"))   # there is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees.
+
+
+referral.wisc.data<-wisc.referral[V(referral.undirected.graph.wisc)]
+deg.graph.wisc<-degree(referral.undirected.graph.wisc)
+payment.wisc<-referral.wisc.data$`Total Medicare Payment Amount`
+number.beneficiaries.wisc<-referral.wisc.data$`Number of Unique Beneficiaries`
+number.service.wisc<-referral.wisc.data$`Number of Services`
+average.age.wisc<-referral.wisc.data$`Average Age of Beneficiaries`
+id.max.pay<-which(referral.wisc.data$`Total Medicare Payment Amount`==max(payment.wisc))
+referral.wisc.data[id.max.pay] # the max payment is the type Ophthalmology  
+plot(deg.graph.wisc[-1845],payment.wisc[-1845]) # plot degree vs. payment
+plot(deg.graph.wisc,average.age.wisc)  # plot degree vs. age
+plot(log(deg.graph.wisc),log(payment.wisc)) # plot degree vs. payment by log thansformation
+fit1<-lm(payment.wisc~deg.graph.wisc)
+summary(fit1)    # not significant 
+```
+
+### plot the network
+
+```{r}
+core.referral.graph.wisc = graph.coreness(referral.undirected.graph.wisc) #get core
+hist(core.referral.graph.wisc)
+sum(core.referral.graph.wisc > 10)
+referral.graph.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=V(referral.undirected.graph.wisc)[core.referral.graph.wisc>10])
+plot(referral.graph.wisc,vertex.size=6,layout=layout.fruchterman.reingold,edge.arrow.size=0.05,vertex.label=NA, main = "Wisconsin Network Graph")
+```
+
+### colors for type and sizes for payment
+
+```{r}
+features = colnames(Dat)[c(7,10,11,14)]
+features
+ids = V(referral.graph.wisc)$name
+tmp = Dat[ids, mult = "last"]
+atbs = tmp[,features, with = F]  
+mean(complete.cases(atbs))
+
+atbs = as.matrix(atbs)
+for(i in 1:ncol(atbs)){
+referral.graph.wisc= set.vertex.attribute(referral.graph.wisc, name = colnames(atbs)[i], index=V(referral.graph.wisc),value =  atbs[,i])
+}
+summary(referral.graph.wisc)
+
+locs = layout.fruchterman.reingold(referral.graph.wisc)
+summary(referral.graph.wisc)
+V(referral.graph.wisc)$size<-(as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount"))^(1/6)
+
+plot(referral.graph.wisc, vertex.label = NA,vertex.color = as.factor(V(referral.graph.wisc)$"Provider Type"),layout = locs,edge.arrow.size=0.05,main="different colors for Provider Type")
+```
+
+
+###  use walktrap to detect community
+
+```{r}
+x<-par(bg="black")                    
+referral.graph.wisc.com = walktrap.community(referral.graph.wisc, steps = 10)
+
+V(referral.graph.wisc)$sg=referral.graph.wisc.com$membership
+V(referral.graph.wisc)$color =rainbow(max(V(referral.graph.wisc)$sg),alpha=0.8)[V(referral.graph.wisc)$sg]
+
+plot(referral.graph.wisc,layout=layout.fruchterman.reingold,vertex.size=1,vertex.color=V(referral.graph.wisc)$color,edge.width=0.5,edge.arrow.size=0.08,edge.color =rgb(1,1,1,0.4),vertex.frame.color=NA,margin= rep(0,4),vertex.label=NA)
+
+```
+
+
+### spectral cluster
+
+```{r}
+x<-par(bg="white")     
+spectralClustering = function(g, k){
+  A = get.adjacency(g)
+  D = Diagonal(n = nrow(A), 1/sqrt(degree(g) + mean(degree(g))))
+  L = D%*%A%*%D
+  X = eigs(L,k)$vec
+  X = t(apply(X, 1, function(x) return(x/sqrt(sum(x^2)))))
+  set.seed(1)
+  return(kmeans(X, k, nstart = 20))
+  }   # function for spectral cluster algorithm
+spec = spectralClustering(referral.graph.wisc, 25)  # to find 25 clusters
+sort(table(spec$cluster))
+referral.graph.wisc.npi<-V(referral.graph.wisc)$"name"
+
+third.cluster.wisc<-induced.subgraph(graph=referral.graph.wisc,vids=(spec$cluster==15))
+plot(third.cluster.wisc,vertex.label=NA,main = "Graph of the 15th cluster within WI")   # for example, plot a cluster
+```
+
+### plot for spectral cluster
+
+```{r}
+x<-par(bg="black")                  
+V(referral.graph.wisc)$sg.spec=spec$cluster
+V(referral.graph.wisc)$color.spec =rainbow(max(V(referral.graph.wisc)$sg.spec),alpha=0.8)[V(referral.graph.wisc)$sg.spec]
+
+plot(referral.graph.wisc,layout=layout.fruchterman.reingold,vertex.size=1,vertex.color=V(referral.graph.wisc)$color.spec,edge.width=0.5,edge.arrow.size=0.08,edge.color =rgb(1,1,1,0.4),vertex.frame.color=NA,margin= rep(0,4),vertex.label=NA)
+x<-par(bg="white")  
+ 
+```
+
+### Take each cluster as a unit of observation, and obtain summary measures of the networks INSIDE each of those clusters. Try to find some relationship.
+
+```{r}
+
+#get a new data.frame including cluster class
+average.payment<-as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount")/as.numeric(V(referral.graph.wisc)$"Number of Services")
+
+frame.referral.graph.wisc<-data.frame(referral.graph.wisc.npi,as.factor(spec$cluster),as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount"),degree(referral.graph.wisc),average.payment)
+
+colnames(frame.referral.graph.wisc)<-c("npi","class","payment","degree","average.payment")
+
+summary.frame.referral.graph.wisc<-
+  frame.referral.graph.wisc %>%
+  group_by(class) %>%      
+  summarize(mean_degree = mean(degree),mean_payment = mean(payment),mean_ave_pay=mean(average.payment)) 
+head(summary.frame.referral.graph.wisc)
+
+```
+
+This is the summary data.frame for each cluster
+
+regression for mean payment and  mean degree in each cluster
+
+```{r}
+plot(summary.frame.referral.graph.wisc[,-1])
+fit<-lm(mean_payment~mean_degree,summary.frame.referral.graph.wisc)
+summary(fit)     #  significant!
+
+```
+
+
+#4. Zipcode clusters
 
 ```{r}
 library(zipcode)
