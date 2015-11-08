@@ -126,7 +126,73 @@ plot(wigraph.corereduce, vertex.label = NA,vertex.color = rainbow_hcl(10)[(as.fa
 legend('topleft',legend = levels(as.factor(V(wigraph.corereduce)$'Provider Type')), col=rainbow_hcl(10), pch=16,cex = 0.5)
 ```
 
-#3.  Explore payment and build regression model within each cluster
+
+
+#3. Zipcode clusters
+
+```{r}
+library(zipcode)
+library(dplyr)
+library(ggplot2)
+data(zipcode)
+zipcode = as.data.table(zipcode) 
+setkey(zipcode, zip)
+
+
+clust.referral.all = clusters(referral.graph.all) #clustering
+clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
+table(clust.eigen.referral.all$membership)
+clust.eigen.referral.all$membership
+which(as.numeric(names(V(referral.graph.all))) %in% zipToNPI$NPI)
+clusterIndex = data.frame(NPI = names(V(referral.graph.all)), index = clust.eigen.referral.all$membership)
+
+# The following code repeat the cluster using Zipcode instead of NPI:
+zipToNPI = data.frame(zipcode = Dat$`NPPES Provider Zip Code`, NPI = Dat$NPI)
+clusterIndex = merge(zipToNPI, clusterIndex, by = "NPI")
+
+head(clusterIndex)
+
+
+colnames(clusterIndex)[2] = "zip"
+zipdata = na.omit(merge(clusterIndex, zipcode, by = "zip"))
+head(zipdata)
+zipdata$index = as.factor(zipdata$index)
+p = ggplot(data = zipdata, aes(x = longitude, y = latitude))
+p + geom_point(aes(colour = index)) + xlim(-175, -50)
+
+locs = zipcode[, c("longitude", "latitude"), with = F]
+locs = locs[complete.cases(locs)]
+sum(is.na(locs))
+rownames(locs) = zips
+
+
+library(deldir)
+library(datautils) # this helps to fill in colors
+library(maps)
+library(grid)
+
+dl = deldir(locs$long, locs$lat)  # find the tesselation
+colss  = as.factor(sample(10,nrow(locs)))  # these are the colors of the zip codes.  ensure the elements line up with locs.
+
+jpeg(filename = "tmp.jpeg",width = 230,height = 100, units = "in", res = 72)  # make it big so that the boarders are thin.  this is a hack!
+
+plot.deldir(dl,wlines = "tess",wpoints = "none",lty = 0, fill = colss)
+
+# whiteout anything outside the boarder. to  thanks stackoverflow.com/questions/16328438/how-can-i-color-the-ocean-blue-in-a-map-of-the-us
+outline <- map("usa", plot=FALSE) # returns a list of x/y coords
+xbox = par("usr")[1:2]; ybox = par("usr")[3:4]
+# create the grid path in the current device
+polypath(c(outline$x, NA, c(xbox, rev(xbox))),
+         c(outline$y, NA, rep(ybox, each=2)),
+         col="white", rule="evenodd")
+dev.off()
+
+
+getwd()
+```
+
+
+#4.  Explore payment and build regression model within each cluster
  
 ```{r}
 library(grDevices)
@@ -183,6 +249,8 @@ plot(log(deg.graph.wisc),log(payment.wisc)) # plot degree vs. payment by log tha
 fit1<-lm(payment.wisc~deg.graph.wisc)
 summary(fit1)    # not significant 
 ```
+
+The degree distribution for the network is long tail. And log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree. There is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees. The highest payment is the type Ophthalmology. The linear relationship for degree vs. payment is  not significant .   
 
 
 
@@ -290,77 +358,14 @@ regression for mean payment and  mean degree in each cluster
 ```{r,echo=FALSE}
 plot(summary.frame.referral.graph.wisc[,-1])
 fit<-lm(mean_payment~mean_degree,summary.frame.referral.graph.wisc)
-summary(fit)     #  significant!
+summary(fit)     
 
 ```
 
-
-#4. Zipcode clusters
-
-```{r}
-library(zipcode)
-library(dplyr)
-library(ggplot2)
-data(zipcode)
-zipcode = as.data.table(zipcode) 
-setkey(zipcode, zip)
+ The positive liner relationship for mean payment and mean degree in each cluster is significant!
 
 
-clust.referral.all = clusters(referral.graph.all) #clustering
-clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
-table(clust.eigen.referral.all$membership)
-clust.eigen.referral.all$membership
-which(as.numeric(names(V(referral.graph.all))) %in% zipToNPI$NPI)
-clusterIndex = data.frame(NPI = names(V(referral.graph.all)), index = clust.eigen.referral.all$membership)
-
-# The following code repeat the cluster using Zipcode instead of NPI:
-zipToNPI = data.frame(zipcode = Dat$`NPPES Provider Zip Code`, NPI = Dat$NPI)
-clusterIndex = merge(zipToNPI, clusterIndex, by = "NPI")
-
-head(clusterIndex)
-
-
-colnames(clusterIndex)[2] = "zip"
-zipdata = na.omit(merge(clusterIndex, zipcode, by = "zip"))
-head(zipdata)
-zipdata$index = as.factor(zipdata$index)
-p = ggplot(data = zipdata, aes(x = longitude, y = latitude))
-p + geom_point(aes(colour = index)) + xlim(-175, -50)
-
-locs = zipcode[, c("longitude", "latitude"), with = F]
-locs = locs[complete.cases(locs)]
-sum(is.na(locs))
-rownames(locs) = zips
-
-
-library(deldir)
-library(datautils) # this helps to fill in colors
-library(maps)
-library(grid)
-
-dl = deldir(locs$long, locs$lat)  # find the tesselation
-colss  = as.factor(sample(10,nrow(locs)))  # these are the colors of the zip codes.  ensure the elements line up with locs.
-
-jpeg(filename = "tmp.jpeg",width = 230,height = 100, units = "in", res = 72)  # make it big so that the boarders are thin.  this is a hack!
-
-plot.deldir(dl,wlines = "tess",wpoints = "none",lty = 0, fill = colss)
-
-# whiteout anything outside the boarder. to  thanks stackoverflow.com/questions/16328438/how-can-i-color-the-ocean-blue-in-a-map-of-the-us
-outline <- map("usa", plot=FALSE) # returns a list of x/y coords
-xbox = par("usr")[1:2]; ybox = par("usr")[3:4]
-# create the grid path in the current device
-polypath(c(outline$x, NA, c(xbox, rev(xbox))),
-         c(outline$y, NA, rep(ybox, each=2)),
-         col="white", rule="evenodd")
-dev.off()
-
-
-getwd()
-```
-
-
-
-#3. Provider Type
+#5. Provider Type
 
 ```{r Zaiwei}
 tmp.link = Et[unique(Dat$NPI)] #link two data sets
