@@ -154,41 +154,13 @@ head(clusterIndex)
 
 
 colnames(clusterIndex)[2] = "zip"
+colnames(clusterIndex)[3] = "cluster"
 zipdata = na.omit(merge(clusterIndex, zipcode, by = "zip"))
 head(zipdata)
-zipdata$index = as.factor(zipdata$index)
+zipdata$cluster = as.factor(zipdata$cluster)
 p = ggplot(data = zipdata, aes(x = longitude, y = latitude))
-p + geom_point(aes(colour = index)) + xlim(-175, -50)
-
-locs = zipcode[, c("longitude", "latitude"), with = F]
-locs = locs[complete.cases(locs)]
-sum(is.na(locs))
-rownames(locs) = zips
-
-
-library(deldir)
-library(datautils) # this helps to fill in colors
-library(maps)
-library(grid)
-
-dl = deldir(locs$long, locs$lat)  # find the tesselation
-colss  = as.factor(sample(10,nrow(locs)))  # these are the colors of the zip codes.  ensure the elements line up with locs.
-
-jpeg(filename = "tmp.jpeg",width = 230,height = 100, units = "in", res = 72)  # make it big so that the boarders are thin.  this is a hack!
-
-plot.deldir(dl,wlines = "tess",wpoints = "none",lty = 0, fill = colss)
-
-# whiteout anything outside the boarder. to  thanks stackoverflow.com/questions/16328438/how-can-i-color-the-ocean-blue-in-a-map-of-the-us
-outline <- map("usa", plot=FALSE) # returns a list of x/y coords
-xbox = par("usr")[1:2]; ybox = par("usr")[3:4]
-# create the grid path in the current device
-polypath(c(outline$x, NA, c(xbox, rev(xbox))),
-         c(outline$y, NA, rep(ybox, each=2)),
-         col="white", rule="evenodd")
-dev.off()
-
-
-getwd()
+p + geom_point(aes(colour = cluster)) + xlim(-175, -50) 
+  #scale_color_brewer(type = "qual", palette = 3) + 
 ```
 
 
