@@ -78,8 +78,9 @@ summary(fit1)    # not significant
 core.referral.graph.wisc = graph.coreness(referral.undirected.graph.wisc) #get core
 hist(core.referral.graph.wisc)
 sum(core.referral.graph.wisc)
+sum(core.referral.graph.wisc>10)
 referral.graph.wisc = induced.subgraph(graph=referral.undirected.graph.wisc,vids=V(referral.undirected.graph.wisc)[core.referral.graph.wisc>10])
-sum(referral.graph.wisc )
+sum(graph.coreness(referral.graph.wisc))
 plot(referral.graph.wisc,vertex.size=6,layout=layout.fruchterman.reingold,edge.arrow.size=0.05,vertex.label=NA, main = "Wisconsin Network Graph")
 ```
 

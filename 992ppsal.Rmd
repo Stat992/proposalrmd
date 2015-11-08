@@ -183,6 +183,8 @@ library(igraph)
 ### Now we foucs on Wisconsin
 
 ```{r,echo=FALSE}
+setkey(Et, V1) 
+setkey(Dat, NPI) 
 wisc.referral = Dat[`NPPES Provider State`== "WI"]
 tmp.link.wisc = Et[unique(wisc.referral$NPI)] #link two data sets
 tmp.link.wisc = tmp.link.wisc[complete.cases(tmp.link.wisc)] 
@@ -204,7 +206,7 @@ ind <- (dis.graph.wisc!= 0)
 plot(dd[ind], dis.graph.wisc[ind],log="xy",col="blue",xlab=c("Log-Degree"),ylab=c("Log-Intensity"), main="Log-Log Degree Distribution")      #   log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree
 
 knn.deg.graph.wisc<- graph.knn(referral.undirected.graph.wisc,V(referral.undirected.graph.wisc))$knn     # Calculate the average nearest neighbor degree of the given vertices 
-plot(deg.graph.wisc,knn.deg.graph.wisc, log="xy",col="goldenrod", xlab=c("Log Vertex Degree"), ylab=c("Log Average Neighbor Degree"))   # there is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees.
+plot(deg.graph.wisc,knn.deg.graph.wisc, log="xy",col="goldenrod", xlab=c("Log Vertex Degree"), ylab=c("Log Average Neighbor Degree"),main="Average neighbor degree versus vertex degree (log–log scale)")   # there is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees.
 
 
 referral.wisc.data<-wisc.referral[V(referral.undirected.graph.wisc)]
@@ -215,7 +217,11 @@ number.service.wisc<-referral.wisc.data$`Number of Services`
 average.age.wisc<-referral.wisc.data$`Average Age of Beneficiaries`
 id.max.pay<-which(referral.wisc.data$`Total Medicare Payment Amount`==max(payment.wisc))
 referral.wisc.data[id.max.pay] # the max payment is the type Ophthalmology  
-plot(deg.graph.wisc[-1845],payment.wisc[-1845]) # plot degree vs. payment
+
+f.pay.deg<-data_frame(deg.graph.wisc[-1845],payment.wisc[-1845])
+colnames(f.pay.deg)<-c("degree","payment")
+p <- ggplot(f.pay.deg, aes(x=degree,y = payment)) 
+p+geom_point()+labs(title="payment vs.degree in WI") # plot degree vs. payment
 plot(deg.graph.wisc,average.age.wisc)  # plot degree vs. age
 plot(log(deg.graph.wisc),log(payment.wisc)) # plot degree vs. payment by log thansformation
 fit1<-lm(payment.wisc~deg.graph.wisc)
@@ -239,7 +245,7 @@ locs = layout.lgl(referral.graph.wisc)
 
 
 ```{r,echo=FALSE}
-features = colnames(Dat)[c(7,10,11,14)]
+features = colnames(Dat)[c(7,10,11,14,29)]
 features
 ids = V(referral.graph.wisc)$name
 tmp = Dat[ids, mult = "last"]
@@ -288,7 +294,7 @@ spec = spectralClustering(referral.graph.wisc, 25)  # to find 25 clusters
 sort(table(spec$cluster))
 referral.graph.wisc.npi<-V(referral.graph.wisc)$"name"
 
-one.cluster.wisc<-induced.subgraph(graph=referral.graph.wisc,vids=(spec$cluster==13))
+one.cluster.wisc<-induced.subgraph(graph=referral.graph.wisc,vids=(spec$cluster==6))
 plot(one.cluster.wisc,vertex.label=NA,main = "Graph of one cluster within WI")   # for example, plot a cluster
 ```
 
@@ -300,6 +306,7 @@ V(referral.graph.wisc)$sg.spec=spec$cluster
 V(referral.graph.wisc)$color.spec =rainbow(max(V(referral.graph.wisc)$sg.spec),alpha=0.8)[V(referral.graph.wisc)$sg.spec]
 
 plot(referral.graph.wisc,layout=locs,vertex.size=1,vertex.color=V(referral.graph.wisc)$color.spec,edge.width=0.5,edge.arrow.size=0.08,edge.color =rgb(1,1,1,0.4),vertex.frame.color=NA,margin= rep(0,4),vertex.label=NA)
+title(main = list("Spectral Cluster within WI", cex = 1.5,col = "white", font = 3))
 x<-par(bg="white")  
  
 ```
@@ -311,14 +318,14 @@ x<-par(bg="white")
 #get a new data.frame including cluster class
 average.payment<-as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount")/as.numeric(V(referral.graph.wisc)$"Number of Services")
 
-frame.referral.graph.wisc<-data.frame(referral.graph.wisc.npi,as.factor(spec$cluster),as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount"),degree(referral.graph.wisc),average.payment)
+frame.referral.graph.wisc<-data.frame(referral.graph.wisc.npi,as.factor(spec$cluster),as.numeric(V(referral.graph.wisc)$"Total Medicare Payment Amount"),degree(referral.graph.wisc),average.payment,as.numeric(V(referral.graph.wisc)$"Average Age of Beneficiaries"))
 
-colnames(frame.referral.graph.wisc)<-c("npi","class","payment","degree","average.payment")
+colnames(frame.referral.graph.wisc)<-c("npi","class","payment","degree","average.payment","ave_age")
 
 summary.frame.referral.graph.wisc<-
   frame.referral.graph.wisc %>%
   group_by(class) %>%      
-  summarize(mean_degree = mean(degree),mean_payment = mean(payment),mean_ave_pay=mean(average.payment)) 
+  summarize(mean_degree = mean(degree),mean_payment = mean(payment),mean_ave_pay=mean(average.payment),mean_ave_age = mean(ave_age)) 
 head(summary.frame.referral.graph.wisc)
 
 ```
@@ -328,7 +335,7 @@ This is the summary data.frame for each cluster
 regression for mean payment and  mean degree in each cluster
 
 ```{r,echo=FALSE}
-plot(summary.frame.referral.graph.wisc[,-1])
+plot(summary.frame.referral.graph.wisc[,-c(1,4)])
 fit<-lm(mean_payment~mean_degree,summary.frame.referral.graph.wisc)
 summary(fit)     
 
