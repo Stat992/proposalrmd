@@ -211,7 +211,7 @@ ind <- (dis.graph.wisc!= 0)
 plot(dd[ind], dis.graph.wisc[ind],log="xy",col="blue",xlab=c("Log-Degree"),ylab=c("Log-Intensity"), main="Log-Log Degree Distribution")      #   log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree
 
 knn.deg.graph.wisc<- graph.knn(referral.undirected.graph.wisc,V(referral.undirected.graph.wisc))$knn     # Calculate the average nearest neighbor degree of the given vertices 
-plot(deg.graph.wisc,knn.deg.graph.wisc, log="xy",col="goldenrod", xlab=c("Log Vertex Degree"), ylab=c("Log Average Neighbor Degree"),main="Average neighbor degree versus vertex degree (log–log scale)")   # there is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees.
+plot(deg.graph.wisc,knn.deg.graph.wisc, log="xy",col="goldenrod", xlab=c("Log Vertex Degree"), ylab=c("Log Average Neighbor Degree"),main="Average neighbor degree versus vertex degree (log–log scale)")   # there is a tendency for vertices of higher degrees to link with vertices of similar degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees.
 
 
 referral.wisc.data<-wisc.referral[V(referral.undirected.graph.wisc)]
@@ -233,7 +233,7 @@ fit1<-lm(payment.wisc~deg.graph.wisc)
 summary(fit1)    # not significant 
 ```
 
-The degree distribution for the network is long tail. And log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree. There is a tendency for vertices of higher degrees to link with vertices of relatively lower degrees, vertices of lower degree tend to link with vertices of both lower and higher degrees. The highest payment is the type Ophthalmology. The linear relationship for degree vs. payment is  not significant .   
+The degree distribution for the network is long tail. And log–log scale Degree distribution  shows a fairly linear decay in the log-frequency as a function of log-degree. There is a tendency for vertices of higher degrees to link with similar vertices , vertices of lower degree tend to link with vertices of both lower and higher degrees. The highest payment is the type Ophthalmology. The linear relationship for degree vs. payment is  not significant .   
 
 
 
@@ -341,7 +341,7 @@ regression for mean payment and  mean degree in each cluster
 
 ```{r,echo=FALSE}
 plot(summary.frame.referral.graph.wisc[,-c(1,4)])
-fit<-lm(mean_payment~mean_degree,summary.frame.referral.graph.wisc)
+fit<-lm(mean_payment~mean_degree+mean_ave_age,summary.frame.referral.graph.wisc)
 summary(fit)     
 
 ```
