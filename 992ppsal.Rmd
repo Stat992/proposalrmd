@@ -145,11 +145,9 @@ setkey(zipcode, zip)
 clust.referral.all = clusters(referral.graph.all) #clustering
 clust.eigen.referral.all = cluster_leading_eigen(referral.graph.all)
 table(clust.eigen.referral.all$membership)
-clust.eigen.referral.all$membership
-which(as.numeric(names(V(referral.graph.all))) %in% zipToNPI$NPI)
 clusterIndex = data.frame(NPI = names(V(referral.graph.all)), index = clust.eigen.referral.all$membership)
 
-# The following code repeat the cluster using Zipcode instead of NPI:
+# The following code find Zipcode correspond to NPI:
 zipToNPI = data.frame(zipcode = Dat$`NPPES Provider Zip Code`, NPI = Dat$NPI)
 clusterIndex = merge(zipToNPI, clusterIndex, by = "NPI")
 
